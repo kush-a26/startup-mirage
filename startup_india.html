@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Startup Mirage — India</title>
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root { --ink:#0f0e0c; --paper:#f5f2ed; --accent:#e8a020; --accent-dark:#b07010; --coral:#d06060; --muted:#7a7570; }
+html { scroll-behavior:smooth; }
+body { font-family:'Georgia',serif; background:var(--ink); color:#f0ede6; }
+#progress { position:fixed;top:0;left:0;height:2px;background:var(--accent);z-index:200;width:0%;transition:width 0.1s; }
+
+/* HERO */
+#hero { position:relative;height:100vh;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;padding:0 6vw 8vh;z-index:20; }
+#hero-img { position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(0.5); }
+#hero-content { position:relative;z-index:2; }
+.kicker-label { font-family:'Helvetica Neue',sans-serif;font-size:0.68rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:1.2rem; }
+#hero h1 { font-size:clamp(3.5rem,9vw,7.5rem);font-weight:400;line-height:1.0;color:#f0ede6;max-width:900px;margin-bottom:1.2rem; }
+#hero .subtitle { font-size:1.05rem;color:#9a9690;max-width:480px;line-height:1.7;font-style:italic;margin-bottom:2rem; }
+.scroll-cue { font-family:'Helvetica Neue',sans-serif;font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:#5a5550;animation:fadeup 2s ease infinite; }
+@keyframes fadeup{0%,100%{opacity:0.3;transform:translateY(4px)}50%{opacity:1;transform:translateY(0)}}
+
+/* TEXT SECTIONS */
+.text-section { background:var(--paper);color:var(--ink);position:relative;z-index:20; }
+.text-inner { max-width:680px;margin:0 auto;padding:7rem 2rem; }
+.section-kicker { font-family:'Helvetica Neue',sans-serif;font-size:0.68rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent-dark);margin-bottom:1rem; }
+.text-inner h2 { font-size:clamp(1.8rem,4vw,2.6rem);font-weight:400;line-height:1.2;margin-bottom:1.4rem;color:var(--ink); }
+.text-inner p { font-size:1.05rem;line-height:1.85;color:#2a2520;margin-bottom:1.3rem; }
+.lede { font-size:1.15rem;color:#1a1510;line-height:1.75; }
+.pull-quote { border-left:4px solid var(--accent-dark);padding:1rem 1.5rem;margin:2rem 0;background:rgba(176,112,16,0.06);font-size:1.05rem;font-style:italic;color:#1a1510;line-height:1.7; }
+.pull-quote cite { display:block;font-style:normal;font-family:'Helvetica Neue',sans-serif;font-size:0.72rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-top:0.4rem; }
+
+/* STICKY MAP SYSTEM */
+.map-block { position:relative; }
+.map-sticky { position:sticky;top:0;height:100vh;width:100%;z-index:1;overflow:hidden; }
+.map-canvas { width:100%;height:100%; }
+.chapters-overlay { position:relative;z-index:5;margin-top:-100vh; }
+
+.chapter { min-height:100vh;display:flex;align-items:flex-end;padding:0 4vw 6vh;pointer-events:none; }
+.chapter.center { align-items:center;justify-content:center; }
+.chapter.right { justify-content:flex-end; }
+.chapter.left { justify-content:flex-start; }
+
+/* MAP CARD — clean, typographic */
+.map-card { background:rgba(12,11,10,0.9);border-top:2px solid var(--accent);padding:2rem 2.2rem;max-width:440px;pointer-events:all; }
+.map-card .ch-label { font-family:'Helvetica Neue',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.6rem; }
+.map-card h2 { font-size:clamp(1.5rem,3.5vw,2.6rem);font-weight:400;line-height:1.15;color:#f0ede6;margin-bottom:0.5rem; }
+.map-card .stat { font-family:'Helvetica Neue',sans-serif;font-size:clamp(2.8rem,6vw,4.5rem);font-weight:800;color:var(--accent);line-height:1;display:block;letter-spacing:-0.02em;margin:0.3rem 0; }
+.map-card .stat-label { font-family:'Helvetica Neue',sans-serif;font-size:0.8rem;color:#7a7570;display:block; }
+.map-card p { font-size:0.88rem;line-height:1.7;color:#9a9690;margin-top:0.6rem; }
+
+/* MAP LEGEND — inside sticky, never bleeds */
+.map-legend { position:absolute;bottom:2rem;left:2rem;z-index:10;background:rgba(12,11,10,0.9);border:0.5px solid rgba(232,160,32,0.12);padding:0.85rem 1rem;font-family:'Helvetica Neue',sans-serif;font-size:10px;color:#6a6560;opacity:0;transition:opacity 0.4s;pointer-events:none; }
+.map-legend.show { opacity:1; }
+.leg-title { font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:#4a4540;margin-bottom:7px; }
+.leg-row { display:flex;align-items:center;gap:7px;margin-bottom:4px;color:#8a8580;font-size:10px; }
+.leg-dot { width:9px;height:9px;border-radius:50%;flex-shrink:0; }
+
+/* COUNTER SECTION */
+#counter-block { position:relative;height:350vh; }
+#counter-sticky { position:sticky;top:0;height:100vh;width:100%;overflow:hidden; }
+#counter-map { width:100%;height:100%; }
+#counter-overlay { position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none; }
+#counter-card { text-align:center;padding:2.5rem 3rem;background:rgba(12,11,10,0.88);border-top:2px solid var(--accent);max-width:480px;width:85vw; }
+#counter-num { font-family:'Helvetica Neue',sans-serif;font-size:clamp(4.5rem,11vw,9rem);font-weight:800;line-height:1;letter-spacing:-0.03em;color:var(--accent);transition:color 0.5s; }
+#counter-unit { font-family:'Helvetica Neue',sans-serif;font-size:0.8rem;letter-spacing:0.1em;text-transform:uppercase;color:#5a5550;margin-top:0.4rem; }
+#counter-context { font-size:1.05rem;color:#b8b4ae;margin-top:1rem;line-height:1.65;min-height:3rem;font-style:italic; }
+#counter-continue { font-family:'Helvetica Neue',sans-serif;font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:#3a3530;margin-top:1.5rem;opacity:0;transition:opacity 0.6s;animation:fadeup 1.8s ease infinite; }
+#counter-continue.show { opacity:1; }
+
+/* STORY CARDS — fixed, slide in */
+.story-card { position:fixed;top:50%;z-index:50;width:min(340px,85vw);background:rgba(12,11,10,0.96);border-top:2px solid var(--accent);padding:1.5rem;opacity:0;pointer-events:none;transition:opacity 0.45s,transform 0.45s; }
+#card-nagaland,#card-rajasthan { right:3vw;transform:translateY(-50%) translateX(30px); }
+#card-nagaland.on,#card-rajasthan.on { opacity:1;transform:translateY(-50%) translateX(0);pointer-events:all; }
+#card-bihar { left:3vw;transform:translateY(-50%) translateX(-30px); }
+#card-bihar.on { opacity:1;transform:translateY(-50%) translateX(0);pointer-events:all; }
+.c-logo { width:44px;height:44px;border-radius:3px;overflow:hidden;background:rgba(232,160,32,0.1);display:flex;align-items:center;justify-content:center;font-family:'Helvetica Neue',sans-serif;font-size:1rem;font-weight:700;color:var(--accent);flex-shrink:0; }
+.c-logo img { width:100%;height:100%;object-fit:contain; }
+.c-name { font-family:'Helvetica Neue',sans-serif;font-size:0.9rem;font-weight:600;color:#f0ede6; }
+.c-meta { font-family:'Helvetica Neue',sans-serif;font-size:0.65rem;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;margin-top:1px; }
+.c-desc { font-size:0.82rem;line-height:1.7;color:#9a9690;margin:0.8rem 0; }
+.c-stat { border-left:2px solid var(--accent);padding:0.5rem 0.75rem;font-family:'Helvetica Neue',sans-serif;font-size:0.76rem;color:#b8b4ae;line-height:1.5;background:rgba(232,160,32,0.05); }
+.c-stat.g { border-left-color:#1a7a50;background:rgba(26,122,80,0.05); }
+.c-stat.r { border-left-color:#d06060;background:rgba(201,64,48,0.05); }
+.c-chips { display:flex;flex-wrap:wrap;gap:4px;margin-top:0.6rem; }
+.c-chip { font-family:'Helvetica Neue',sans-serif;font-size:0.68rem;color:#6a6560;background:rgba(255,255,255,0.04);padding:2px 8px;border-radius:99px; }
+
+/* CLOSING */
+#closing { position:relative;z-index:20;min-height:70vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:10vh 6vw;overflow:hidden; }
+#closing-bg { position:absolute;inset:0;background-image:url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRU79OZNQVYc6saP22ow_a9WupDwPcl0GR-EA&s');background-size:cover;background-position:center;filter:brightness(0.25);z-index:0; }
+#closing-gradient { position:absolute;inset:0;background:linear-gradient(to bottom,rgba(12,11,10,0.7) 0%,rgba(12,11,10,0.85) 50%,rgba(12,11,10,0.95) 100%);z-index:1; }
+#closing-content { position:relative;z-index:2;max-width:680px; }
+#closing h2 { font-size:clamp(2rem,5vw,3.8rem);font-weight:400;color:#f0ede6;line-height:1.2;margin-bottom:1.5rem; }
+#closing p { font-size:1rem;color:#7a7570;line-height:1.75;font-style:italic;max-width:480px;margin:0 auto 2rem; }
+.methodology { margin-top:3rem;font-family:'Helvetica Neue',sans-serif;font-size:0.72rem;color:#3a3530;max-width:600px;line-height:1.6;text-align:left;border-top:1px solid #2a2520;padding-top:1.5rem; }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<!-- ① HERO -->
+<section id="hero">
+  <img id="hero-img" src="https://raw.githubusercontent.com/kush-a26/The-office-dialogue-chart/main/ChatGPT%20Image%20Mar%2018%2C%202026%2C%2001_16_22%20PM.png" alt="" onerror="this.style.display='none'">
+  <div id="hero-content">
+    <div class="kicker-label">Narrative Cartography · India · 2024</div>
+    <h1>The Startup<br>Mirage</h1>
+    <p class="subtitle">India registered over three lakh startups and called it a revolution. Follow the money, and most of the country vanishes.</p>
+    <div class="scroll-cue">↓ scroll to begin</div>
+  </div>
+</section>
+
+<!-- ② TEXT: MODI'S PROMISE -->
+<section class="text-section">
+  <div class="text-inner">
+    <div class="section-kicker">January 16, 2016 · Vigyan Bhawan, New Delhi</div>
+    <h2>"We want to make India a nation of job creators, not job seekers."</h2>
+    <p class="lede">Prime Minister Narendra Modi stood before India's entrepreneurial class and made a promise. The Startup India programme would be the engine of a new economy — one that reached every district, every state, every young person with an idea and a laptop.</p>
+    <div class="pull-quote">
+      "Startup India is not just a scheme. It is a movement. A movement that will ignite the spark of entrepreneurship in every corner of Bharat."
+      <p>The programme moved fast. Within three years, over 27,000 crore rupees had been committed through the Fund of Funds for Startups. By 2024, the government had recognised over 3,12,866 startups — granting them tax exemptions, faster incorporation, and access to government tenders. India climbed to third in global startup rankings. The scheme, by every official metric, was a success.</p>
+      <p>But registered is not the same as funded. Recognised is not the same as backed. And the government's map of India's startup revolution looks very different from the map that venture capital drew.</p>
+      <cite>— PM Modi, Startup India Launch, 2016</cite>
+    </div>
+    <p>The numbers seemed to confirm it. By 2024, over three lakh startups had registered under the programme. Government press releases glowed. India had become the third-largest startup ecosystem in the world. But registered is not the same as funded.</p>
+  </div>
+</section>
+
+<!-- ③ MAP 1: INDIA GLOWS -->
+<div class="map-block">
+  <div class="map-sticky" id="sticky-1">
+    <div id="map1" class="map-canvas"></div>
+    <div class="map-legend" id="leg1"></div>
+  </div>
+  <div class="chapters-overlay">
+    <div class="chapter right" data-map="1" data-ch="all" style="min-height:130vh;">
+      <div class="map-card">
+        <div class="ch-label">Chapter 1 — The promise</div>
+        <h2>On paper, the revolution reached everywhere</h2>
+        <span class="stat">3,12,866</span>
+        <span class="stat-label">startups registered across all 36 states and union territories</span>
+        <p>Each dot on this map represents 500 registered startups. India is covered.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ④ COUNTER WITH DOT MAP -->
+<section id="counter-block">
+  <div id="counter-sticky">
+    <div id="counter-map"></div>
+    <div id="counter-overlay">
+      <div id="counter-card">
+        <div id="counter-num">3,12,866</div>
+        <div id="counter-unit">startups registered under Startup India</div>
+        <div id="counter-context">Scroll to see how many actually received venture capital funding</div>
+        <div id="counter-continue">↓ keep scrolling</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ⑤ MAP 2: VC STORY + CORRIDOR -->
+<div class="map-block">
+  <div class="map-sticky" id="sticky-2">
+    <div id="map2" class="map-canvas"></div>
+    <div class="map-legend" id="leg2"></div>
+  </div>
+  <div class="chapters-overlay">
+
+    <div class="chapter" data-map="2" data-ch="vc">
+      <div class="map-card">
+        <div class="ch-label">Chapter 2 — Where the money went</div>
+        <h2>Only 708 startups received any investor backing.</h2>
+        <span class="stat">0.23%</span>
+        <span class="stat-label">of all registered startups — 708 out of 3,12,866</span>
+        <p>The rest of the country — in amber — registered, applied, and waited. The darkest states received the most capital. Most of India sits in the shadows.</p>
+      </div>
+    </div>
+
+    <div class="chapter right" data-map="2" data-ch="corridor">
+      <div class="map-card">
+        <div class="ch-label">Chapter 3 — The three-state story</div>
+        <h2>Karnataka, Maharashtra and Tamil Nadu hold 56% of all VC-funded startups.</h2>
+        <span class="stat">7.28%</span>
+        <span class="stat-label">Karnataka's VC conversion rate — the highest in India</span>
+        <p>A founder in Karnataka is 40 times more likely to receive venture capital than one in Bihar. The three outlined states dominate India's entire funding ecosystem.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ⑥ TEXT: HUMAN STORIES -->
+<section class="text-section">
+  <div class="text-inner">
+    <div class="section-kicker">The other India</div>
+    <h2>The founders the capital never reached</h2>
+    <p>The YNOS database records their names. Hundreds of startups in Nagaland, Bihar, Rajasthan — registered, categorised, given a sector tag. They did everything the programme asked. They built products, filed papers, waited for the system to notice.</p>
+    <p>The data does not tell us their ideas were bad. It tells us that the capital flowed overwhelmingly to a small set of cities, connected by alumni networks and proximity to investors concentrated in Bengaluru, Mumbai, and Delhi.</p>
+    <p>Below are three real companies from the data. Scroll to meet them on the map.</p>
+  </div>
+</section>
+
+<!-- ⑦ MAP 3: STORY ZOOMS WITH DOTS -->
+<div class="map-block">
+  <div class="map-sticky" id="sticky-3">
+    <div id="map3" class="map-canvas"></div>
+  </div>
+  <div class="chapters-overlay">
+
+    <div class="chapter left" data-map="3" data-ch="nagaland">
+      <div class="map-card">
+        <div class="ch-label">Story 1 · Nagaland</div>
+        <h2>142 registered startups.<br>Zero received VC.</h2>
+        <p>Every dot you see is a real startup. None has received venture capital funding.</p>
+      </div>
+    </div>
+
+    <div class="chapter right" data-map="3" data-ch="bihar">
+      <div class="map-card">
+        <div class="ch-label">Story 2 · Bihar</div>
+        <h2>8,000 registered startups.<br>14 received VC.</h2>
+        <p>Bihar has 240 million people — more than Brazil. Its VC conversion rate is 0.18%.</p>
+      </div>
+    </div>
+
+    <div class="chapter left" data-map="3" data-ch="rajasthan">
+      <div class="map-card">
+        <div class="ch-label">Story 3 · Rajasthan</div>
+        <h2>10,235 registered startups.<br>136 received VC.</h2>
+        <p>A conversion rate of 1.33% — still a fraction of Karnataka's 7.28%.</p>
+      </div>
+    </div>
+
+    <div class="chapter right" data-map="3" data-ch="govt">
+      <div class="map-card">
+        <div class="ch-label">Chapter 4 — The government's reach</div>
+        <h2>Public money travels further. But it does not build unicorns.</h2>
+        <span class="stat">6.93%</span>
+        <span class="stat-label">Tamil Nadu's govt funding rate — higher than its VC rate</span>
+        <p>Government schemes reach more states than private capital. UP has 1,034 govt-backed startups. But grants and schemes do not produce the scaling capital that builds platforms.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- STORY CARDS (fixed) -->
+<div class="story-card" id="card-nagaland">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.85rem;">
+    <div class="c-logo">B</div>
+    <div><div class="c-name">Bauaok Private Limited</div><div class="c-meta">Longleng · Nagaland · 2021</div></div>
+  </div>
+  <p class="c-desc">A dairy supply chain connecting milk farmers across 50 villages in Longleng District. Trains farmers, supplies equipment, creates employment — addressing a critical food supply gap in the region.</p>
+  <div class="c-stat">1 investor secured · ₹6.6M in loans · <strong style="color:#d06060;">No VC funding received</strong><br><span style="color:#4a4540;font-size:0.7rem;">One of 142 registered startups in Nagaland. None have VC.</span></div>
+  <div class="c-chips"><span class="c-chip">Anpu Along Phom, 37</span><span class="c-chip">Bauaok Lemjan Phom, 34</span></div>
+</div>
+
+<div class="story-card" id="card-bihar">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.85rem;">
+    <div class="c-logo"><img src="https://s3.ap-south-1.amazonaws.com/assets.ynos.in/startup-logos/YNOS410352.jpg" alt="SciGlyph"></div>
+    <div><div class="c-name">SciGlyph Exploration</div><div class="c-meta">Patna · Bihar · 2020</div></div>
+  </div>
+  <p class="c-desc">A research-based cleantech company working on renewable energy utilisation, green transportation, and plastic waste reduction — with a patent filed and a vision that exceeds its current funding.</p>
+  <div class="c-stat g">1 patent filed · Clean Tech + Energy Storage · <strong style="color:#d06060;">No VC funding</strong><br><span style="color:#4a4540;font-size:0.7rem;">Bihar: 8,000 registered startups. 14 have VC.</span></div>
+  <div class="c-chips"><span class="c-chip">Navin Niraj, 44</span><span class="c-chip">Raj Kumar, 36</span><span class="c-chip">Sirish Kumar, 38</span></div>
+</div>
+
+<div class="story-card" id="card-rajasthan">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.85rem;">
+    <div class="c-logo"><img src="https://s3.ap-south-1.amazonaws.com/assets.ynos.in/startup-logos/YNOS356463.png" alt="Contree"></div>
+    <div><div class="c-name">Contree</div><div class="c-meta">Jaipur · Rajasthan · 2017</div></div>
+  </div>
+  <p class="c-desc">A social enterprise connecting privileged and underprivileged communities through short-duration skill and resource-sharing projects. Active for seven years with six founders and a clear social mission.</p>
+  <div class="c-stat r">6 founders · 7 years operating · <strong style="color:#d06060;">No angel or VC funding</strong><br><span style="color:#4a4540;font-size:0.7rem;">Rajasthan: 10,235 registered startups. 136 have VC.</span></div>
+  <div class="c-chips"><span class="c-chip">Ajay Jangid, 31</span><span class="c-chip">Akshay Jaimini, 29</span><span class="c-chip">Bhumika Rawat</span><span class="c-chip">+3 founders</span></div>
+</div>
+
+<!-- ⑧ CLOSING -->
+<section id="closing">
+  <div id="closing-bg"></div>
+  <div id="closing-gradient"></div>
+  <div id="closing-content">
+    <h2>"If the next Zomato is sitting in Patna, would anyone know?"</h2>
+    <p>The programme registered three lakh founders. The capital reached seven hundred and eight of them.</p>
+    <div class="methodology">
+      <strong>Data source:</strong> YNOS Venture Engine (ynos.in), accessed March 2025. Startup counts retrieved via API using state-level filters. VC filter: "All VC Funded". Angel: "All Angel Funded". Govt: "All Govt. Funded". GeoJSON: Datameet open maps (NAME_1 property key). Startup profiles: Bauaok Private Limited (Nagaland), SciGlyph Exploration (Bihar), Contree (Rajasthan) — sourced from YNOS public records. Hero illustration: AI-generated for editorial purposes.
+    </div>
+  </div>
+</section>
+
+<script>
+mapboxgl.accessToken = 'pk.eyJ1Ijoia3VzaC1iMjYiLCJhIjoiY21rN3oxZmxnMDd6cTNkcjN0M2NtMmg1OCJ9.AYC_1KcGBJ6-frr31321lw';
+
+// ── DATA ──
+const S = {
+  'Maharashtra':           {vc_pct:3.00,govt_pct:5.10,vc:1467,all:48927,lat:19.75,lng:75.71},
+  'Karnataka':             {vc_pct:7.28,govt_pct:8.26,vc:2209,all:30339,lat:15.31,lng:75.71},
+  'Delhi':                 {vc_pct:2.93,govt_pct:4.20,vc:859, all:29273,lat:28.61,lng:77.20},
+  'Uttar Pradesh':         {vc_pct:1.22,govt_pct:3.88,vc:324, all:26650,lat:26.85,lng:80.91},
+  'Gujarat':               {vc_pct:0.84,govt_pct:4.92,vc:181, all:21452,lat:22.26,lng:71.19},
+  'Tamil Nadu':            {vc_pct:2.02,govt_pct:6.93,vc:391, all:19367,lat:11.13,lng:78.66},
+  'Telangana':             {vc_pct:2.35,govt_pct:5.18,vc:370, all:15743,lat:17.12,lng:79.02},
+  'Haryana':               {vc_pct:5.20,govt_pct:5.08,vc:739, all:14202,lat:29.06,lng:76.08},
+  'Kerala':                {vc_pct:0.77,govt_pct:6.35,vc:80,  all:10374,lat:10.85,lng:76.27},
+  'Rajasthan':             {vc_pct:1.33,govt_pct:3.97,vc:136, all:10235,lat:27.02,lng:74.22},
+  'West Bengal':           {vc_pct:1.27,govt_pct:4.47,vc:108, all:8500, lat:22.98,lng:87.85},
+  'Andhra Pradesh':        {vc_pct:0.77,govt_pct:4.13,vc:58,  all:7500, lat:15.91,lng:79.74},
+  'Madhya Pradesh':        {vc_pct:0.31,govt_pct:4.67,vc:28,  all:9000, lat:22.97,lng:78.66},
+  'Punjab':                {vc_pct:0.68,govt_pct:3.60,vc:34,  all:5000, lat:31.15,lng:75.34},
+  'Bihar':                 {vc_pct:0.18,govt_pct:3.00,vc:14,  all:8000, lat:25.60,lng:85.10},
+  'Orissa':                {vc_pct:0.55,govt_pct:4.00,vc:22,  all:4000, lat:20.94,lng:85.09},
+  'Assam':                 {vc_pct:0.51,govt_pct:3.43,vc:18,  all:3500, lat:26.14,lng:91.74},
+  'Jharkhand':             {vc_pct:0.32,govt_pct:3.21,vc:9,   all:2800, lat:23.61,lng:85.28},
+  'Chhattisgarh':          {vc_pct:0.28,govt_pct:3.20,vc:7,   all:2500, lat:21.30,lng:81.83},
+  'Uttaranchal':           {vc_pct:0.30,govt_pct:3.25,vc:6,   all:2000, lat:30.07,lng:79.02},
+  'Himachal Pradesh':      {vc_pct:0.44,govt_pct:3.33,vc:4,   all:900,  lat:31.10,lng:77.17},
+  'Goa':                   {vc_pct:0.67,govt_pct:3.33,vc:8,   all:1200, lat:15.30,lng:74.12},
+  'Chandigarh':            {vc_pct:1.20,govt_pct:3.50,vc:12,  all:1000, lat:30.73,lng:76.78},
+  'Jammu and Kashmir':     {vc_pct:0.25,govt_pct:3.13,vc:2,   all:800,  lat:33.73,lng:76.84},
+  'Meghalaya':             {vc_pct:0.33,govt_pct:3.00,vc:2,   all:600,  lat:25.47,lng:91.37},
+  'Puducherry':            {vc_pct:0.60,govt_pct:3.00,vc:3,   all:500,  lat:11.94,lng:79.81},
+  'Mizoram':               {vc_pct:0.33,govt_pct:3.00,vc:1,   all:300,  lat:23.16,lng:92.94},
+  'Nagaland':              {vc_pct:0,   govt_pct:2.86,vc:0,   all:142,  lat:26.16,lng:94.58},
+  'Sikkim':                {vc_pct:0,   govt_pct:3.00,vc:0,   all:200,  lat:27.53,lng:88.51},
+  'Manipur':               {vc_pct:0,   govt_pct:2.80,vc:0,   all:250,  lat:24.66,lng:93.91},
+  'Tripura':               {vc_pct:0,   govt_pct:2.73,vc:0,   all:220,  lat:23.94,lng:91.99},
+  'Arunachal Pradesh':     {vc_pct:0,   govt_pct:2.78,vc:0,   all:180,  lat:28.22,lng:94.73},
+  'Lakshadweep':           {vc_pct:0,   govt_pct:2.00,vc:0,   all:50,   lat:10.57,lng:72.64},
+  'Andaman and Nicobar':   {vc_pct:0,   govt_pct:2.67,vc:0,   all:150,  lat:11.67,lng:92.74},
+  'Dadra and Nagar Haveli':{vc_pct:0.50,govt_pct:3.00,vc:1,   all:200,  lat:20.19,lng:73.00},
+  'Daman and Diu':         {vc_pct:0,   govt_pct:3.00,vc:0,   all:100,  lat:20.40,lng:72.83},
+};
+
+function vcFill(n){const d=S[n];if(!d||d.vc_pct===0)return '#0f0a04';if(d.vc_pct<0.5)return '#3d2b00';if(d.vc_pct<2)return '#8a5c00';if(d.vc_pct<5)return '#c88010';return '#e8a020';}
+function govtFill(n){const d=S[n];if(!d)return '#060e08';if(d.govt_pct<3)return '#0a1a0a';if(d.govt_pct<5)return '#0f5030';if(d.govt_pct<7)return '#1a7a50';return '#2aaa70';}
+function matchExpr(fn){const e=['match',['get','NAME_1']];Object.keys(S).forEach(k=>{e.push(k);e.push(fn(k));});e.push('#0a0a0a');return e;}
+
+const CORRIDOR=['Karnataka','Maharashtra','Tamil Nadu'];
+
+let gj=null;
+function getGJ(){return gj?Promise.resolve(gj):fetch('india_states.geojson').then(r=>r.json()).then(d=>{gj=d;return d;});}
+
+function makeMap(id,onload){
+  const m=new mapboxgl.Map({container:id,style:'mapbox://styles/mapbox/dark-v11',center:[78.9,19.5],zoom:3.8,interactive:false,attributionControl:id==='map1'});
+  m.on('load',()=>getGJ().then(d=>{
+    m.addSource('s',{type:'geojson',data:d});
+    m.addLayer({id:'fill',type:'fill',source:'s',paint:{'fill-color':'#3d2b00','fill-opacity':0.9}});
+    m.addLayer({id:'line',type:'line',source:'s',paint:{'line-color':'rgba(255,255,255,0.07)','line-width':0.6}});
+    if(onload)onload(m);
+  }).catch(()=>{
+    document.getElementById(id).innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#5a5550;font-family:sans-serif;font-size:13px;">india_states.geojson not found in same folder.</div>';
+  }));
+  return m;
+}
+
+// ── DOTS GEOJSON for counter map ──
+function buildDotsGJ(maxDots){
+  const features=[];
+  const DOT_UNIT=1000; // 1 dot = 500 startups
+  Object.entries(S).forEach(([name,d])=>{
+    const count=Math.round(d.all/DOT_UNIT);
+    for(let i=0;i<count;i++){
+      const jitter=1.4;
+      features.push({
+        type:'Feature',
+        properties:{state:name,type:'all'},
+        geometry:{type:'Point',coordinates:[
+          d.lng+(Math.random()-0.5)*jitter*2,
+          d.lat+(Math.random()-0.5)*jitter
+        ]}
+      });
+    }
+  });
+  // shuffle then slice to maxDots
+  for(let i=features.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[features[i],features[j]]=[features[j],features[i]];}
+  return {type:'FeatureCollection',features:features.slice(0,maxDots)};
+}
+
+// total dots = 3,12,866/500 ≈ 626
+const ALL_DOTS=buildDotsGJ(626);
+// funded dots — one per funded VC state, ~70 dots (708/10)
+function buildFundedDots(){
+  const features=[];
+  const VC_DOT_UNIT=10;
+  Object.entries(S).forEach(([name,d])=>{
+    if(d.vc===0)return;
+    const count=Math.max(1,Math.round(d.vc/VC_DOT_UNIT));
+    for(let i=0;i<count;i++){
+      features.push({
+        type:'Feature',
+        properties:{state:name},
+        geometry:{type:'Point',coordinates:[d.lng+(Math.random()-0.5)*0.6,d.lat+(Math.random()-0.5)*0.4]}
+      });
+    }
+  });
+  return {type:'FeatureCollection',features};
+}
+const VC_DOTS=buildFundedDots();
+
+// ── COUNTER MAP ──
+let cm=null,cmLoaded=false;
+cm=new mapboxgl.Map({container:'counter-map',style:'mapbox://styles/mapbox/dark-v11',center:[78.9,19.5],zoom:3.8,interactive:false,attributionControl:false});
+cm.on('load',()=>{
+  cmLoaded=true;
+  cm.addSource('dots',{type:'geojson',data:ALL_DOTS});
+  cm.addLayer({id:'dots-layer',type:'circle',source:'dots',paint:{
+    'circle-radius':5,
+    'circle-color':'#e8a020',
+    'circle-opacity':0.7,
+    'circle-blur':0.2
+  }});
+});
+
+// ── COUNTER SCROLL LOGIC ──
+let counterDone=false,counterRunning=false;
+const cNum=document.getElementById('counter-num');
+const cCtx=document.getElementById('counter-context');
+const cCont=document.getElementById('counter-continue');
+
+function runCounter(){
+  if(counterRunning||counterDone)return;
+  counterRunning=true;
+  const start=312866,end=708,dur=8000; // 8 seconds
+  const t0=performance.now();
+  function ease(t){return 1-Math.pow(1-t,3);}
+
+  function step(now){
+    const t=Math.min((now-t0)/dur,1);
+    const val=Math.round(start-(start-end)*ease(t));
+    cNum.textContent=val.toLocaleString('en-IN');
+
+    // Update context text
+    if(t<0.15){
+      cNum.style.color='#e8a020';
+      cCtx.textContent='Scroll to see how many actually received venture capital funding';
+    } else if(t<0.5){
+      cNum.style.color='#c88010';
+      cCtx.textContent='Filtering to startups that received any investor backing...';
+    } else if(t<0.85){
+      cNum.style.color='#a04010';
+      cCtx.textContent='Most of India registered startups received no external investment at all';
+    } else {
+      cNum.style.color='#c04545';
+      cCtx.textContent='Only '+val.toLocaleString('en-IN')+' out of 3,12,866 registered startups received any investor backing';
+    }
+
+    // Transition dots
+    if(cmLoaded&&cm.getSource('dots')){
+      const progress=ease(t);
+      if(t>0.4&&t<0.6){
+        // swap to funded dots halfway
+        cm.getSource('dots').setData(VC_DOTS);
+        cm.setPaintProperty('dots-layer','circle-color','#e8a020');
+        cm.setPaintProperty('dots-layer','circle-radius',5);
+      }
+      if(t<0.4){
+        // fade out all dots gradually
+        cm.setPaintProperty('dots-layer','circle-opacity',0.7*(1-progress*1.5));
+      }
+    }
+
+    if(t<1){requestAnimationFrame(step);}
+    else{
+      counterDone=true;counterRunning=false;
+      cCtx.textContent='Only 708 out of 3,12,866 received investor backing — 0.23% of all registered startups';
+      cCont.classList.add('show');
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+// Lock scroll during counter
+window.addEventListener('wheel',e=>{
+  const r=document.getElementById('counter-block').getBoundingClientRect();
+  if(r.top<=0&&r.bottom>=window.innerHeight){
+    if(!counterDone){e.preventDefault();if(!counterRunning)runCounter();}
+  }
+},{passive:false});
+
+window.addEventListener('touchstart',e=>{
+  const r=document.getElementById('counter-block').getBoundingClientRect();
+  if(r.top<=0&&r.bottom>=window.innerHeight&&!counterDone)e.preventDefault();
+},{passive:false});
+
+// ── MAP 1 ──
+let m1=null,m1l=false;
+m1=makeMap('map1',(m)=>{
+  m1l=true;
+  // add dot layer on top of state fill
+  m.addSource('dots1',{type:'geojson',data:ALL_DOTS});
+  m.addLayer({id:'dots1-layer',type:'circle',source:'dots1',paint:{
+    'circle-radius':3.5,
+    'circle-color':'#f5c96a',
+    'circle-opacity':0.75,
+    'circle-blur':0.3
+  }});
+});
+
+// ── MAP 2 ──
+let m2=null,m2l=false;
+m2=makeMap('map2',(m)=>{
+  m2l=true;
+  m.setPaintProperty('fill','fill-color',matchExpr(vcFill));
+});
+
+// ── MAP 3 ──
+let m3=null,m3l=false;
+m3=makeMap('map3',(m)=>{ m3l=true; });
+
+// ── LEGENDS ──
+const LEGENDS={
+  vc:{title:'VC conversion rate',rows:[{c:'#e8a020',l:'> 5%'},{c:'#c88010',l:'2–5%'},{c:'#8a5c00',l:'0.5–2%'},{c:'#3d2b00',l:'< 0.5%'},{c:'#0f0a04',l:'None'}]},
+  govt:{title:'Govt funding rate',rows:[{c:'#2aaa70',l:'> 7%'},{c:'#1a7a50',l:'5–7%'},{c:'#0f5030',l:'3–5%'},{c:'#0a1a0a',l:'< 3%'}]},
+};
+
+function showLeg(id,type){
+  const el=document.getElementById(id);
+  if(!type){el.classList.remove('show');return;}
+  const l=LEGENDS[type];
+  el.innerHTML=`<div class="leg-title">${l.title}</div>`+l.rows.map(r=>`<div class="leg-row"><div class="leg-dot" style="background:${r.c}"></div>${r.l}</div>`).join('');
+  el.classList.add('show');
+}
+
+// ── CHAPTER OBSERVERS ──
+document.querySelectorAll('[data-map]').forEach(el=>{
+  new IntersectionObserver(entries=>{
+    if(!entries[0].isIntersecting)return;
+    const map=entries[0].target.dataset.map;
+    const ch=entries[0].target.dataset.ch;
+
+    if(map==='1'&&m1l){
+      m1.flyTo({center:[78.9,19.5],zoom:3.8,duration:1200});
+      showLeg('leg1',null);
+    }
+
+    if(map==='2'&&m2l){
+      if(ch==='vc'){
+        // dark fill — only VC states bright, rest near-black
+        const expr=['match',['get','NAME_1']];
+        Object.keys(S).forEach(k=>{expr.push(k);expr.push(S[k].vc_pct>0?vcFill(k):'#0f0a04');});
+        expr.push('#0a0a0a');
+        m2.setPaintProperty('fill','fill-color',expr);
+        m2.setPaintProperty('fill','fill-opacity',0.92);
+        m2.flyTo({center:[78.9,19.5],zoom:3.8,duration:1400});
+        showLeg('leg2','vc');
+      }
+      if(ch==='corridor'){
+        // fill all dark, outline only the 3 corridor states
+        m2.setPaintProperty('fill','fill-color',matchExpr(vcFill));
+        m2.flyTo({center:[78,16],zoom:4.3,duration:1600});
+        // add/update outline layer for corridor states
+        if(!m2.getLayer('corridor-line')){
+          m2.addLayer({id:'corridor-line',type:'line',source:'s',paint:{
+            'line-color':['match',['get','NAME_1'],...CORRIDOR.flatMap(n=>[n,'#e8a020']),'rgba(0,0,0,0)'],
+            'line-width':['match',['get','NAME_1'],...CORRIDOR.flatMap(n=>[n,2.5]),'rgba(0,0,0,0)'],
+            'line-opacity':0.9
+          }});
+        }
+        showLeg('leg2','vc');
+      }
+    }
+
+    if(map==='3'&&m3l){
+      hideCards();
+      if(ch==='nagaland'){
+        m3.setPaintProperty('fill','fill-color',['match',['get','NAME_1'],'Nagaland','#e05555','#0a0808']);
+        m3.setPaintProperty('fill','fill-opacity',0.92);
+        if(!m3.getLayer('hl-line')){
+          m3.addLayer({id:'hl-line',type:'line',source:'s',paint:{'line-color':['match',['get','NAME_1'],'Nagaland','#f07070','transparent'],'line-width':2.5}});
+        } else {
+          m3.setPaintProperty('hl-line','line-color',['match',['get','NAME_1'],'Nagaland','#f07070','transparent']);
+        }
+        m3.flyTo({center:[94.5,26.2],zoom:6.2,duration:1800});
+        showCard('card-nagaland');
+      }
+      if(ch==='bihar'){
+        m3.setPaintProperty('fill','fill-color',['match',['get','NAME_1'],'Bihar','#e05555','#0a0808']);
+        if(m3.getLayer('hl-line'))m3.setPaintProperty('hl-line','line-color',['match',['get','NAME_1'],'Bihar','#f07070','transparent']);
+        m3.flyTo({center:[85.3,25.4],zoom:6.5,duration:1800});
+        showCard('card-bihar');
+      }
+      if(ch==='rajasthan'){
+        m3.setPaintProperty('fill','fill-color',['match',['get','NAME_1'],'Rajasthan','#e05555','#0a0808']);
+        if(m3.getLayer('hl-line'))m3.setPaintProperty('hl-line','line-color',['match',['get','NAME_1'],'Rajasthan','#f07070','transparent']);
+        m3.flyTo({center:[74.2,26.5],zoom:5.8,duration:1800});
+        showCard('card-rajasthan');
+      }
+      if(ch==='govt'){
+        m3.setPaintProperty('fill','fill-color',matchExpr(govtFill));
+        if(m3.getLayer('hl-line'))m3.setPaintProperty('hl-line','line-color','transparent');
+        m3.flyTo({center:[78.9,19.5],zoom:3.8,duration:1600});
+        showLeg('leg2',null);
+      }
+    }
+  },{threshold:0.5}).observe(el);
+});
+
+function showCard(id){document.getElementById(id).classList.add('on');}
+function hideCards(){['card-nagaland','card-bihar','card-rajasthan'].forEach(id=>document.getElementById(id).classList.remove('on'));}
+
+// Hide cards when text sections in view
+document.querySelectorAll('.text-section,#closing').forEach(el=>{
+  new IntersectionObserver(entries=>{if(entries[0].isIntersecting)hideCards();},{threshold:0.3}).observe(el);
+});
+
+// Progress
+window.addEventListener('scroll',()=>{
+  document.getElementById('progress').style.width=Math.min(100,Math.round(window.scrollY/(document.body.scrollHeight-window.innerHeight)*100))+'%';
+});
+</script>
+</body>
+</html>
