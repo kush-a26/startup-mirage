@@ -97,7 +97,7 @@ body{font-family:'Courier Prime',Courier,monospace;background:var(--ink);color:v
 .mapboxgl-ctrl-bottom-right{bottom:0.5rem!important;right:0.5rem!important;}
 
 /* ── COUNTER — left-anchored ── */
-#counter-block{position:relative;height:560vh;}
+#counter-block{position:relative;height:450vh;}
 #counter-sticky{position:sticky;top:0;height:100vh;width:100%;overflow:hidden;}
 #counter-map{width:100%;height:100%;}
 #counter-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;pointer-events:none;padding:0 5vw;}
@@ -635,11 +635,9 @@ function buildDS(){
   {const f=[];Object.entries(S).forEach(([n,d])=>{const c=Math.max(d.all>500?2:0,Math.round(d.all/500));for(let i=0;i<c;i++)f.push(dot(n));});sets.push(fc(f));}
   /* Stop 1: 2,23,000 — proportionally thinner */
   {const f=[];Object.entries(S).forEach(([n,d])=>{const c=Math.max(d.all>500?1:0,Math.round(d.all/700));for(let i=0;i<c;i++)f.push(dot(n));});sets.push(fc(f));}
-  /* Stop 2: 6,300 closures — very sparse */
-  {const f=[];Object.entries(S).forEach(([n,d])=>{const c=Math.max(d.all>2000?1:0,Math.round(d.all/20000));for(let i=0;i<c;i++)f.push(dot(n));});sets.push(fc(f));}
-  /* Stop 3: 1,420 FFS — sparse, weighted toward funded states */
+  /* Stop 2: 1,420 FFS — sparse, weighted toward funded states */
   {const f=[];Object.entries(S).forEach(([n,d])=>{const c=Math.round(d.vc_pct*1.5);for(let i=0;i<c;i++)f.push(dot(n));});sets.push(fc(f));}
-  /* Stop 4: 708 VC — 7 rose dots in corridor states only */
+  /* Stop 3: 708 VC — 7 rose dots in corridor states only */
   {const dist=[['Karnataka',2],['Maharashtra',2],['Delhi',1],['Tamil Nadu',1],['Haryana',1]];
    const f=[];dist.forEach(([n,c])=>{for(let i=0;i<c;i++)f.push(dot(n));});sets.push({type:'FeatureCollection',features:f});}
   return sets;
@@ -683,7 +681,6 @@ cm.on('load',()=>{
 const STOPS=[
   {val:312866,ctx:'The government recognised every one of them. Each received a certificate.',prompt:'↓ scroll to filter',done:false},
   {val:223000,ctx:'The government\'s own revised count by 2026: 2.23 lakh. Nearly 90,000 registrations had been de-recognised or closed. The certificate was not permanent.',prompt:'↓ keep scrolling',done:false},
-  {val:6300,  ctx:'By October 2025, 6,300 recognised startups had officially closed. 90% of Indian startups fail within five years.',prompt:'↓ keep scrolling',done:false},
   {val:1420,  ctx:'The government\'s own Fund of Funds backed 1,420 startups. The money was real. The geography it followed was not.',prompt:'↓ keep scrolling',done:false},
   {val:708,   ctx:'Only 708 out of 3,12,866 registered startups received any private VC. That is 0.23%.',prompt:'↓ continue',done:true},
 ];
